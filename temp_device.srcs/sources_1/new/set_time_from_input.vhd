@@ -64,7 +64,7 @@ architecture Behavioral of set_time_from_input is
             when 1 =>
                 v_out := "10011111";
             when 2 =>
-                v_out := "00100111";
+                v_out := "00100101";
             when 3 =>
                 v_out := "00001101";
             when 4 =>
@@ -93,22 +93,22 @@ display_driver:
         if(ms_clock = '1' and ms_clock'event)
         then
             case seven_seg_select_internal is
-            when "1110" =>
+            when "0111" =>
                 if(side = '0' and count_clocks < 250) then
                     seven_seg_code := X"FF";
                 else
                     seven_seg_code := f_digit_to_7seg(digits_of_time_global mod 10);
                 end if;
-                seven_seg_select_internal <= "1101";
-            when "1101" =>
+                seven_seg_select_internal <= "1011";
+            when "1011" =>
                 if(side = '0' and count_clocks < 250) then
                     seven_seg_code := X"FF";
                 else
                     seven_seg_code := f_digit_to_7seg((digits_of_time_global/10) mod 10);
                 end if;
-                seven_seg_select_internal <= "1011";
+                seven_seg_select_internal <= "1101";
    
-            when "1011" =>
+            when "1101" =>
                 if(side = '1' and count_clocks < 250) then
                     seven_seg_code := X"FF";
                 else
@@ -118,28 +118,32 @@ display_driver:
                         seven_seg_code(7) := '0';
                     end if;
                 end if;
-                seven_seg_select_internal <= "0111";
+                seven_seg_select_internal <= "1110";
 
-            when "0111" =>
+            when "1110" =>
                 if(side = '1' and count_clocks < 250) then
                     seven_seg_code := X"FF";
                 else
                     seven_seg_code := f_digit_to_7seg(digits_of_time_global/1000);
                 end if;
-                seven_seg_select_internal <= "1110";
+                seven_seg_select_internal <= "0111";
             when others =>
                 seven_seg_code := X"FF";
-                seven_seg_select_internal <= "1110";
+                seven_seg_select_internal <= "0111";
+                count_clocks := 251;
             end case;
-            
-            count_clocks := count_clocks+1;
-            if count_clocks = 500 then 
+            if(select_switches = "001" or select_switches = "010" or select_switches = "100") then
+                count_clocks := count_clocks+1;
+            else
+                count_clocks := 251;
+            end if;
+            if(count_clocks = 500) then 
                 count_clocks := 0;
             end if;
             
             seven_seg <= seven_seg_code;
             seven_seg_select <= seven_seg_select_internal; 
-        end  if;
+        end if;
     end process display_driver;
     
     
@@ -167,7 +171,7 @@ display_time:
             is_leap := '0';
 --            if((current_time_internal/(3600*24*365))/4 <
             tmp_32b := ((current_time_internal/(3600*24*365))/4);
-            num_leap_years := tmp_32b(24 to 31);
+            num_leap_years := tmp_32b(24 to 31);-- Can't be more than 8 bit in the used range.
             if(num_leap_years /= (current_time_internal/(3600*24*365) + 3600*24*num_leap_years)/4) then
                 num_leap_years := num_leap_years + 1;            
             end if;
@@ -175,33 +179,34 @@ display_time:
                 case select_switches is
                 when "100" =>
                     digits_of_time := digits_of_time + to_integer((current_time_internal/60) mod 60);
-                    digits_of_time := digits_of_time + to_integer((current_time_internal/3600) mod 24);
+                    digits_of_time := digits_of_time + to_integer((current_time_internal/3600) mod 24)*100;
                 when "010" =>
                     if(current_year mod 4 = 0) then
                         is_leap := '1';
                     else
                         is_leap := '0';
                     end if;
-                    days_of_year := to_integer(current_time_internal)/(24*3600); -- total days since 1970
+                    days_of_year := to_integer(current_time_internal)/(24*3600)+1; -- total days since 1970
                     days_of_year := days_of_year - 365*(current_year-1970) - to_integer(num_leap_years);
                     if(days_of_year < 32)then --january
-                    digits_of_time := digits_of_time + days_of_year+100;
+                        digits_of_time := digits_of_time + days_of_year+100;
+                        months_done := '1';
                     else days_in_months_so_far := days_in_months_so_far + 31; 
-                    if is_leap = '1' then --february
-                        if days_of_year - days_in_months_so_far < 30 then
-                           digits_of_time := digits_of_time + days_of_year+200 - days_in_months_so_far;
-                           months_done := '1';
-                        else
-                            days_in_months_so_far := days_in_months_so_far + 29;
+                        if is_leap = '1' then --february
+                            if days_of_year - days_in_months_so_far < 30 then
+                                digits_of_time := digits_of_time + days_of_year+200 - days_in_months_so_far;
+                                months_done := '1';
+                            else
+                                days_in_months_so_far := days_in_months_so_far + 29;
+                            end if;
+                        else  
+                            if days_of_year - days_in_months_so_far < 29 then
+                                digits_of_time := digits_of_time + days_of_year+200 - days_in_months_so_far;
+                                months_done := '1';
+                            else
+                                days_in_months_so_far := days_in_months_so_far + 28;
+                            end if;
                         end if;
-                    else  
-                        if days_of_year - days_in_months_so_far < 29 then
-                           digits_of_time := digits_of_time + days_of_year+200 - days_in_months_so_far;
-                           months_done := '1';
-                        else
-                            days_in_months_so_far := days_in_months_so_far + 28;
-                        end if;
-                    end if;
                     end if;
                     if(months_done = '0')
                     then
@@ -249,12 +254,13 @@ display_time:
                 when "001" =>
                     digits_of_time := current_year;
                 when others =>
-                    digits_of_time := 0;
+                    digits_of_time := (last_reading/10) mod 10000;
                     digits_of_time_global <= digits_of_time;
              end case;
-                for i in 0 to 3 loop
+             digits_of_time_global <= digits_of_time;
+--                for i in 0 to 3 loop
                     
-                end loop;
+--                end loop;
         end if;
     end process display_time;
     

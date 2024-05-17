@@ -146,7 +146,7 @@ variable num_sec: natural range 0 to 60 := 0;
 begin
     if( sec_internal'event and sec_internal = '1')
     then
-        if(num_sec = 60)
+        if(num_sec = 5)
         then
             request_yes <= '1';
             num_sec := 0;

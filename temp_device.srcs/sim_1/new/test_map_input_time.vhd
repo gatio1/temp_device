@@ -39,8 +39,8 @@ architecture Behavioral of test_map_input_time is
 signal clk_100M : std_logic;
 signal sec_internal : std_logic;
 signal ms_internal : std_logic;
-signal select_switches : std_logic_vector(0 to 2) := "000";
-signal time_set_btn : std_logic_vector(0 to 4) := "00000";
+signal select_switches : std_logic_vector(0 to 2) := "001";
+signal time_set_btn : std_logic_vector(0 to 4) := "00100";
 signal current_time_internal : unsigned(0 to 31) := to_unsigned(0, 32);
 signal last_reading_internal : integer := 0;
 signal seven_seg: std_logic_vector(0 to 7) := "11111111";

@@ -45,7 +45,7 @@ architecture Behavioral of register_11b is
 signal Q_internal: std_logic_vector(0 to 10) := "11111111111";
 begin
 set_state_of_reg:
-    process(clk, enable_set)
+    process(clk, enable_set, D)
     begin
     if(enable_set = '1') then
         Q_internal <= D;

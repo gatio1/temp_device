@@ -57,7 +57,7 @@ begin
                 clock_dev := 50000;
                 msecs := msecs + 1;
             end if;
-            if(msecs = 500)
+            if(msecs = 1000)
             then
                 clk_internal_s <= not clk_internal_s;
                 msecs := 0;
