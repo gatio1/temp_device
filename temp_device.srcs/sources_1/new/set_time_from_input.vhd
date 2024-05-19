@@ -164,25 +164,32 @@ display_time:
         then
             digits_of_time := 0;
             current_year := 1970;
---            num_leap_years := to_unsigned(0, num_leap_years'length);
+--            num_leap_years := to_unsigned(1, num_leap_years'length);
             days_of_year := 1;
             days_in_months_so_far := 0;
             months_done := '0';
             is_leap := '0';
+            tmp_32b := to_unsigned(0, 32);
+            
 --            if((current_time_internal/(3600*24*365))/4 <
-            tmp_32b := ((current_time_internal/(3600*24*365))/4);
-            num_leap_years := tmp_32b(24 to 31);-- Can't be more than 8 bit in the used range.
-            if(num_leap_years /= (current_time_internal/(3600*24*365) + 3600*24*num_leap_years)/4) then
-                num_leap_years := num_leap_years + 1;            
+            if (current_time_internal/(3600*24*365) > 4) then
+                tmp_32b := 1 + (current_time_internal/(3600*24) - (365*2+366))/(365*3+366);--  Accurate number of leap years
+            else if (current_time_internal/(3600*24) > 365*2+366) then
+                    tmp_32b := to_unsigned(1, 32);
+                end if;
             end if;
-            current_year := current_year + to_integer((current_time_internal-(num_leap_years*24*3600))/(365*24*3600));-- valid  until 2100
+            num_leap_years := tmp_32b(24 to 31);-- Can't be more than 8 bit in the used range.
+--            if(num_leap_years /= (current_time_internal/(3600*24*365) + 3600*24*num_leap_years)/4) then
+--                num_leap_years := num_leap_years + 1;            
+--            end if;
+            current_year := current_year + to_integer((current_time_internal/(24*3600) -num_leap_years)/365);-- valid  until 2100
                 case select_switches is
                 when "100" =>
                     digits_of_time := digits_of_time + to_integer((current_time_internal/60) mod 60);
                     digits_of_time := digits_of_time + to_integer((current_time_internal/3600) mod 24)*100;
                 when "010" =>
                     if(current_year mod 4 = 0) then
-                        is_leap := '1';
+                        is_leap := '1'; 
                     else
                         is_leap := '0';
                     end if;
@@ -239,7 +246,6 @@ display_time:
                         else days_in_months_so_far := days_in_months_so_far + 30;
                         if days_of_year - days_in_months_so_far < 32 then --december
                         digits_of_time := digits_of_time + days_of_year + 1200 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 31;
                         end if;
                         end if;
                         end if;

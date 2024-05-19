@@ -76,7 +76,7 @@ map_serialize_uart:
     
     process is
     begin
-        wait for 1000000ns;
+        wait for 1000000us;
         new_data <= not new_data;
     end process;
     data.timestamp <= x"01234567";

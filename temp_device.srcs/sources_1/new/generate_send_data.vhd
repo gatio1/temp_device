@@ -42,7 +42,7 @@ port(
     signal seven_seg_select: out std_logic_vector(0 to 3);
     signal select_switches: in std_logic_vector(0 to 2);
     signal time_set_btn: in std_logic_vector(0 to 4);
-    signal new_data: out std_logic := '0';
+    signal new_data: out std_logic := '1';
     signal clk_100M: in std_logic
     );
 end generate_send_data;
@@ -73,15 +73,17 @@ end component adc_get_reading;
 signal request:std_logic := '0';
 signal adc_reading: std_logic_vector(0 to 15);
 signal value_fetched: std_logic := '0';
-signal new_data_internal: std_logic := '0'; 
+signal new_data_internal: std_logic := '1'; 
 
 signal new_data_yes: std_logic := '0';
 signal request_yes: std_logic := '0';
 signal adc_request: std_logic;
 signal adc_ready_flag: std_logic;
+signal adc_ready_flag_internal: std_logic := '0';
 signal last_reading_internal : integer := 0;
 
 signal sec_internal: std_logic;
+signal sec_internal_prev: std_logic;
 signal ms_internal: std_logic;
 
 signal current_time_internal: unsigned(0 to 31);
@@ -121,54 +123,74 @@ send_request:
 process (clk_100M)
 variable req_yes_prev: std_logic;
 variable new_data_yes_prev :std_logic;
+
+variable reading_tmp : integer := 0; 
+
+variable num_sec: natural range 0 to 60 := 0;
 begin
     if(clk_100M'event and clk_100M = '1')
     then
-        if(request_yes = '1' and req_yes_prev = '0')
+        if(adc_request = '1') 
         then
-            adc_request <= '1';
-        else
             adc_request <= '0';
         end if;
-        if(new_data_yes = '1')
+        sec_internal_prev <= sec_internal;
+        if((adc_ready_flag = not adc_ready_flag_internal) and adc_ready_flag = '1')
         then
-            new_data <= not(new_data_internal);
-            new_data_internal <= not(new_data_internal);
-        end if; 
-        req_yes_prev := request_yes;
-        new_data_yes_prev := new_data_yes;
+            send_data.timestamp <= std_logic_vector(current_time_internal);
+            -- The transfer function of the temperature sensor is 0.123 for every lsb in the adc reading.
+            -- We will represent the temperature in 1housandths of the degree.
+            reading_tmp := to_integer(unsigned(adc_reading));
+            reading_tmp := reading_tmp*123 -273150;
+            last_reading_internal <= reading_tmp;
+            send_data.temp_data <= to_signed(reading_tmp, send_data.temp_data'length);
+            new_data <= not new_data_internal;
+            new_data_internal <= not new_data_internal;
+            else
+            adc_ready_flag_internal <= adc_ready_flag;
+        end if;
+        if( sec_internal = not sec_internal_prev and sec_internal = '1')
+        then
+            if(num_sec = 60)
+            then
+                adc_request <= '1';
+                num_sec := 0;
+            else
+                num_sec := num_sec + 1;
+            end if;
+        end if;
     end if;
 end process send_request;
 
-request_adc_reading:
-process (sec_internal) -- request adc reading every minute
-variable num_sec: natural range 0 to 60 := 0;
-begin
-    if( sec_internal'event and sec_internal = '1')
-    then
-        if(num_sec = 5)
-        then
-            request_yes <= '1';
-            num_sec := 0;
-        end if;
-        num_sec := num_sec + 1;
-    end if;
-end process request_adc_reading;
+--request_adc_reading:
+--process (sec_internal) -- request adc reading every minute
+--variable num_sec: natural range 0 to 60 := 0;
+--begin
+--    if( sec_internal = not sec_internal_prev and sec_internal = '1')
+--    then
+--        if(num_sec = 5)
+--        then
+--            request_yes <= '1';
+--            num_sec := 0;
+--        end if;
+--        num_sec := num_sec + 1;
+--    end if;
+--end process request_adc_reading;
 
-receive_adc_reading:
-process (adc_ready_flag)
-variable reading_tmp : integer := 0; 
-begin
-    if(adc_ready_flag'event and adc_ready_flag = '1')
-    then
-        send_data.timestamp <= std_logic_vector(current_time_internal);
-        -- The transfer function of the temperature sensor is 0.123 for every lsb in the adc reading.
-        -- We will represent the temperature in 1housandths of the degree.
-        reading_tmp := to_integer(unsigned(adc_reading));
-        reading_tmp := reading_tmp*123 -273150;
-        last_reading_internal <= reading_tmp;
-        send_data.temp_data <= to_signed(reading_tmp, send_data.temp_data'length);
-        new_data_yes <= '1';
-    end if;
-end process receive_adc_reading;
+--receive_adc_reading:
+--process (adc_ready_flag)
+--variable reading_tmp : integer := 0; 
+--begin
+--    if((adc_ready_flag = not adc_ready_flag_internal) and adc_ready_flag = '1')
+--    then
+--        send_data.timestamp <= std_logic_vector(current_time_internal);
+--        -- The transfer function of the temperature sensor is 0.123 for every lsb in the adc reading.
+--        -- We will represent the temperature in 1housandths of the degree.
+--        reading_tmp := to_integer(unsigned(adc_reading));
+--        reading_tmp := reading_tmp*123 -273150;
+--        last_reading_internal <= reading_tmp;
+--        send_data.temp_data <= to_signed(reading_tmp, send_data.temp_data'length);
+--        new_data_yes <= '1';
+--    end if;
+--end process receive_adc_reading;
 end Behavioral;
