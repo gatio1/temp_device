@@ -92,8 +92,8 @@
         "CHANNEL_ENABLE_VAUXP2_VAUXN2": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "CHANNEL_ENABLE_VAUXP3_VAUXN3": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "CHANNEL_ENABLE_VAUXP4_VAUXN4": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
-        "CHANNEL_ENABLE_VAUXP5_VAUXN5": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
-        "CHANNEL_ENABLE_VAUXP6_VAUXN6": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
+        "CHANNEL_ENABLE_VAUXP5_VAUXN5": [ { "value": "false", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
+        "CHANNEL_ENABLE_VAUXP6_VAUXN6": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "CHANNEL_ENABLE_VAUXP7_VAUXN7": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "CHANNEL_ENABLE_VAUXP8_VAUXN8": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "CHANNEL_ENABLE_VAUXP9_VAUXN9": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
@@ -219,7 +219,7 @@
         "C_ALARM_LIMIT_R14": [ { "value": "27306", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_ALARM_LIMIT_R15": [ { "value": "25122", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_SEQUENCE_R0": [ { "value": "256", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "C_SEQUENCE_R1": [ { "value": "32", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_SEQUENCE_R1": [ { "value": "64", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_SEQUENCE_R2": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_SEQUENCE_R3": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_SEQUENCE_R4": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
@@ -231,8 +231,8 @@
         "C_VAUX2": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_VAUX3": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_VAUX4": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "C_VAUX5": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
-        "C_VAUX6": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_VAUX5": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
+        "C_VAUX6": [ { "value": "1", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_VAUX7": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_VAUX8": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
         "C_VAUX9": [ { "value": "0", "resolve_type": "generated", "format": "long", "usage": "all" } ],
@@ -283,8 +283,8 @@
         "dclk_in": [ { "direction": "in", "driver_value": "0" } ],
         "vp_in": [ { "direction": "in", "driver_value": "0" } ],
         "vn_in": [ { "direction": "in", "driver_value": "0" } ],
-        "vauxp5": [ { "direction": "in", "driver_value": "0" } ],
-        "vauxn5": [ { "direction": "in", "driver_value": "0" } ],
+        "vauxp6": [ { "direction": "in", "driver_value": "0" } ],
+        "vauxn6": [ { "direction": "in", "driver_value": "0" } ],
         "channel_out": [ { "direction": "out", "size_left": "4", "size_right": "0" } ],
         "eoc_out": [ { "direction": "out" } ],
         "alarm_out": [ { "direction": "out" } ],
@@ -314,13 +314,13 @@
             "V_P": [ { "physical_name": "vp_in" } ]
           }
         },
-        "Vaux5": {
+        "Vaux6": {
           "vlnv": "xilinx.com:interface:diff_analog_io:1.0",
           "abstraction_type": "xilinx.com:interface:diff_analog_io_rtl:1.0",
           "mode": "slave",
           "port_maps": {
-            "V_N": [ { "physical_name": "vauxn5" } ],
-            "V_P": [ { "physical_name": "vauxp5" } ]
+            "V_N": [ { "physical_name": "vauxn6" } ],
+            "V_P": [ { "physical_name": "vauxp6" } ]
           }
         },
         "dclk_in": {

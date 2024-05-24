@@ -35,8 +35,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity generate_send_data is
 port(
-    signal vauxn5 : in std_logic;
-    signal vauxp5 : in std_logic;
+    signal vauxn6 : in std_logic;
+    signal vauxp6 : in std_logic;
     signal send_data : out send_data_struct;
     signal seven_seg: out std_logic_vector(0 to 7);
     signal seven_seg_select: out std_logic_vector(0 to 3);
@@ -65,10 +65,49 @@ port(
     signal clk : in std_logic;
     signal request : in std_logic; 
     signal out_val : out std_logic_vector(0 to 15);
-    signal vauxp5 : in STD_LOGIC;
-    signal vauxn5 : in STD_LOGIC;
+    signal vauxp6 : in STD_LOGIC;
+    signal vauxn6 : in STD_LOGIC;
     signal new_val : out std_logic := '0');
 end component adc_get_reading;
+
+    function f_adc_reading_lmt70_conversion(
+        in_reading: in unsigned(0 to 15))
+        return integer is
+        variable temp_reading: integer;
+        variable tmp_int1: integer;
+        variable tmp_int2: integer; 
+--        variale to_mv: integer;
+    begin
+        temp_reading := to_integer(in_reading);
+        tmp_int1 := 1047*4 + (96*1047*4)/4000; --10 degrees
+        tmp_int2 := 995*4 + (96*995*4)/4000; --20 degrees
+        if(temp_reading >= tmp_int2) then -- result is one digit after dp.
+            temp_reading := 20000 - (10000/(tmp_int1-tmp_int2))*(temp_reading - tmp_int2); -- four adc intervals make one mV
+        else
+        tmp_int1 := 995*4 + (96*995*4)/4000; --20 degrees
+        tmp_int2 := 943*4 + (96*943*4)/4000; --30 degrees
+        if(temp_reading >= tmp_int2) then -- result is one digit after dp.
+            temp_reading := 30000 - (10000/(tmp_int1-tmp_int2))*(temp_reading - tmp_int2); -- four adc intervals make one mV
+        else
+        tmp_int1 := 943*4 + (96*943*4)/4000; --30 degrees
+        tmp_int2 := 891*4 + (96*891*4)/4000; --40 degrees
+        if(temp_reading >= tmp_int2) then -- result is one digit after dp.
+            temp_reading := 40000 - (10000/(tmp_int1-tmp_int2))*(temp_reading - tmp_int2);
+        else
+        tmp_int1 := 891*4 + (96*891*4)/4000; --40 degrees
+        tmp_int2 := 838*4 + (96*838*4)/4000; --50 degrees
+        if(temp_reading >= tmp_int2) then -- result is one digit after dp.
+            temp_reading := 50000 - (10000/(tmp_int1-tmp_int2))*(temp_reading - tmp_int2);
+        else
+            tmp_int1 := 838*4 + (96*838*4)/4000;
+            tmp_int2 := 303*4 + (96*303*4)/4000;
+            temp_reading := 150000 - (100000/(tmp_int1-tmp_int2))*(temp_reading - tmp_int2);
+        end if;
+        end if; 
+        end if;
+        end if;
+        return temp_reading;
+    end;
 
 signal request:std_logic := '0';
 signal adc_reading: std_logic_vector(0 to 15);
@@ -102,8 +141,8 @@ adc_get_reading port map(
     clk => clk_100M,
     request => adc_request, 
     out_val => adc_reading,
-    vauxp5 => vauxp5,
-    vauxn5 => vauxn5,
+    vauxp6 => vauxp6,
+    vauxn6 => vauxn6,
     new_val => adc_ready_flag
 );
 
@@ -126,6 +165,8 @@ variable new_data_yes_prev :std_logic;
 
 variable reading_tmp : integer := 0; 
 
+variable tmp_int1: integer; 
+variable tmp_int2: integer; 
 variable num_sec: natural range 0 to 60 := 0;
 begin
     if(clk_100M'event and clk_100M = '1')
@@ -140,8 +181,9 @@ begin
             send_data.timestamp <= std_logic_vector(current_time_internal);
             -- The transfer function of the temperature sensor is 0.123 for every lsb in the adc reading.
             -- We will represent the temperature in 1housandths of the degree.
-            reading_tmp := to_integer(unsigned(adc_reading));
-            reading_tmp := reading_tmp*123 -273150;
+            reading_tmp := f_adc_reading_lmt70_conversion(unsigned(adc_reading));
+--            reading_tmp := to_integer(unsigned(adc_reading));
+--            reading_tmp := reading_tmp*123 -273150;
             last_reading_internal <= reading_tmp;
             send_data.temp_data <= to_signed(reading_tmp, send_data.temp_data'length);
             new_data <= not new_data_internal;
@@ -151,7 +193,7 @@ begin
         end if;
         if( sec_internal = not sec_internal_prev and sec_internal = '1')
         then
-            if(num_sec = 60)
+            if(num_sec = 10)
             then
                 adc_request <= '1';
                 num_sec := 0;
@@ -162,35 +204,4 @@ begin
     end if;
 end process send_request;
 
---request_adc_reading:
---process (sec_internal) -- request adc reading every minute
---variable num_sec: natural range 0 to 60 := 0;
---begin
---    if( sec_internal = not sec_internal_prev and sec_internal = '1')
---    then
---        if(num_sec = 5)
---        then
---            request_yes <= '1';
---            num_sec := 0;
---        end if;
---        num_sec := num_sec + 1;
---    end if;
---end process request_adc_reading;
-
---receive_adc_reading:
---process (adc_ready_flag)
---variable reading_tmp : integer := 0; 
---begin
---    if((adc_ready_flag = not adc_ready_flag_internal) and adc_ready_flag = '1')
---    then
---        send_data.timestamp <= std_logic_vector(current_time_internal);
---        -- The transfer function of the temperature sensor is 0.123 for every lsb in the adc reading.
---        -- We will represent the temperature in 1housandths of the degree.
---        reading_tmp := to_integer(unsigned(adc_reading));
---        reading_tmp := reading_tmp*123 -273150;
---        last_reading_internal <= reading_tmp;
---        send_data.temp_data <= to_signed(reading_tmp, send_data.temp_data'length);
---        new_data_yes <= '1';
---    end if;
---end process receive_adc_reading;
 end Behavioral;

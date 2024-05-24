@@ -64,8 +64,8 @@ type send_data_struct is record
  
 component generate_send_data
 port(
-    signal vauxn5 : in std_logic;
-    signal vauxp5 : in std_logic;
+    signal vauxn6 : in std_logic;
+    signal vauxp6 : in std_logic;
     signal send_data : out send_data_struct;
     signal seven_seg: out std_logic_vector(0 to 7);
     signal seven_seg_select: out std_logic_vector(0 to 3);

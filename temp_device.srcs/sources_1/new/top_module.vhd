@@ -33,6 +33,8 @@ use work.modules_pack.all;
 
 entity top_module is
   Port ( 
+    signal vauxn6: in std_logic;
+    signal vauxp6: in std_logic;
     signal seven_seg: out std_logic_vector(0 to 7);
     signal seven_seg_select: out std_logic_vector(0 to 3);
     signal select_switches: in std_logic_vector(0 to 2);
@@ -58,8 +60,8 @@ serialize_uart_data port map(
 
 map_generate_data:
 generate_send_data port map(
-    vauxn5 => '0',
-    vauxp5 => '0',
+    vauxn6 => vauxn6,
+    vauxp6 => vauxp6,
     send_data => data,
     seven_seg => seven_seg,
     seven_seg_select => seven_seg_select,

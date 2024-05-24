@@ -36,8 +36,8 @@ entity adc_get_reading is
     signal clk : in std_logic;
     signal request : in std_logic; 
     signal out_val : out std_logic_vector(0 to 15);
-    signal vauxp5 : in STD_LOGIC;
-    signal vauxn5 : in STD_LOGIC;
+    signal vauxp6 : in STD_LOGIC;
+    signal vauxn6 : in STD_LOGIC;
     signal new_val : out std_logic := '0'); 
 end adc_get_reading;
 
@@ -53,8 +53,8 @@ COMPONENT xadc_wiz_0
     dclk_in : IN STD_LOGIC;
     vp_in : IN STD_LOGIC;
     vn_in : IN STD_LOGIC;
-    vauxp5 : IN STD_LOGIC;
-    vauxn5 : IN STD_LOGIC;
+    vauxp6 : IN STD_LOGIC;
+    vauxn6 : IN STD_LOGIC;
     channel_out : OUT STD_LOGIC_VECTOR(4 DOWNTO 0);
     eoc_out : OUT STD_LOGIC;
     alarm_out : OUT STD_LOGIC;
@@ -94,8 +94,8 @@ ADC : xadc_wiz_0
     dclk_in => clk,
     vp_in => vp_in,
     vn_in => vn_in,
-    vauxp5 => vauxp5,
-    vauxn5 => vauxn5,
+    vauxp6 => vauxp6,
+    vauxn6 => vauxn6,
     channel_out => channel_out,
     eoc_out => eoc_out,
     alarm_out => alarm_out,
@@ -110,7 +110,7 @@ request_drive:
         then
             if(request = '1')
             then
-                daddr_in <= "0000000";
+                daddr_in <= "0010110";
                 den_in <= '1';
             else 
                 den_in <= '0';
@@ -125,35 +125,5 @@ request_drive:
             end if;
         end if;  
     end process request_drive;
-  
---request_reading:
---  process(request) is
---  begin
---    if(request'event and request = '1')
---    then
---        daddr_in <= "0000000";
---        den_in <= '1';
---        request_sent <= '1';
---    end if;
---  end process request_reading;
-  
---receive_reading:
---    process(drdy_out) is
---    begin
---        if(drdy_out'event and drdy_out = '1')
---        then
---            if request = '1'
---            then
---                if(request_sent = '1')
---                then
---                    out_val <= std_logic_vector(shift_right(unsigned(do_out), 4));
---                    request_sent <= '0';
---                    new_val <= '1';
---                else
---                    new_val <= '0';
---                end if;
---            end if;
---        end if;
---    end process receive_reading;
  
 end Behavioral;
