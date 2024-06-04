@@ -153,6 +153,7 @@ int receive_data(comm_struct *comm)
 		
 		read_st.time_of_reading = reorder_bytes((void*)readbuff);
 		read_st.reading = (int32_t)reorder_bytes((void*)(&readbuff[4]));
+		printf("\n%u\n", read_st.time_of_reading);
 		reading_time = (time_t)read_st.time_of_reading;
 		//ADJUST_TIMEZONE(reading_time);
 

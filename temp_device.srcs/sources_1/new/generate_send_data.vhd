@@ -40,7 +40,7 @@ port(
     signal send_data : out send_data_struct;
     signal seven_seg: out std_logic_vector(0 to 7);
     signal seven_seg_select: out std_logic_vector(0 to 3);
-    signal select_switches: in std_logic_vector(0 to 2);
+    signal select_switches: in std_logic_vector(0 to 3);
     signal time_set_btn: in std_logic_vector(0 to 4);
     signal new_data: out std_logic := '1';
     signal clk_100M: in std_logic
@@ -52,7 +52,7 @@ component set_time_from_input is
 port(
     signal ms_clock: in std_logic;
     signal sec_clock: in std_logic;
-    signal select_switches: in std_logic_vector(0 to 2);
+    signal select_switches: in std_logic_vector(0 to 3);
     signal time_set_btn: in std_logic_vector(0 to 4);
     signal current_time: out unsigned(0 to 31); -- time in seconds since epoch
     signal last_reading: in integer;
@@ -193,7 +193,7 @@ begin
         end if;
         if( sec_internal = not sec_internal_prev and sec_internal = '1')
         then
-            if(num_sec = 10)
+            if(num_sec = 0)
             then
                 adc_request <= '1';
                 num_sec := 0;

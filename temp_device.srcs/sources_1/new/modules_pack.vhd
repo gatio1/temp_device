@@ -69,7 +69,7 @@ port(
     signal send_data : out send_data_struct;
     signal seven_seg: out std_logic_vector(0 to 7);
     signal seven_seg_select: out std_logic_vector(0 to 3);
-    signal select_switches: in std_logic_vector(0 to 2);
+    signal select_switches: in std_logic_vector(0 to 3);
     signal time_set_btn: in std_logic_vector(0 to 4);
     signal new_data: out std_logic := '1';
     signal clk_100M: in std_logic

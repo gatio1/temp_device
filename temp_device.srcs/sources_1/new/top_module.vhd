@@ -37,7 +37,7 @@ entity top_module is
     signal vauxp6: in std_logic;
     signal seven_seg: out std_logic_vector(0 to 7);
     signal seven_seg_select: out std_logic_vector(0 to 3);
-    signal select_switches: in std_logic_vector(0 to 2);
+    signal select_switches: in std_logic_vector(0 to 3);
     signal time_set_btn: in std_logic_vector(0 to 4);
     signal clk: in std_logic;
     signal uart_tx: out std_logic

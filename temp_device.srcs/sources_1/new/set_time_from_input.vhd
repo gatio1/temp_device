@@ -35,7 +35,7 @@ entity set_time_from_input is
     Port (
     signal ms_clock: in std_logic;
     signal sec_clock: in std_logic;
-    signal select_switches: in std_logic_vector(0 to 2);
+    signal select_switches: in std_logic_vector(0 to 3);
     signal time_set_btn: in std_logic_vector(0 to 4);
     signal current_time: out unsigned(0 to 31); -- time in seconds since epoch
     signal last_reading: in integer;
@@ -45,12 +45,13 @@ end set_time_from_input;
 
 architecture Behavioral of set_time_from_input is
     signal time_set_btn_prev: std_logic_vector(0 to 4) := "00000"; 
-    signal current_time_internal: unsigned(0 to 31) := to_unsigned(0, 32);
+    signal current_time_internal: unsigned(0 to 31) := to_unsigned(43200, 32); -- start at 12pm on 01.01.1970
     signal seven_seg_select_internal: std_logic_vector(0 to 3) := "1110";
     signal digit: natural range 0 to 9 := 0;
     signal side: std_logic := '0';
     signal lights_on: std_logic := '1';
     signal digits_of_time_global: natural range 0 to 9999 :=0;
+    signal utc_time_offset: unsigned(0 to 31) := to_unsigned(0, 32);
 
         
     function f_digit_to_7seg(
@@ -113,7 +114,7 @@ display_driver:
                     seven_seg_code := X"FF";
                 else
                     seven_seg_code :=  f_digit_to_7seg((digits_of_time_global/100) mod 10);
-                    if(select_switches = "100" or select_switches = "010")
+                    if(select_switches = "1000" or select_switches = "0100")
                     then
                         seven_seg_code(7) := '0';
                     end if;
@@ -132,7 +133,7 @@ display_driver:
                 seven_seg_select_internal <= "0111";
                 count_clocks := 251;
             end case;
-            if(select_switches = "001" or select_switches = "010" or select_switches = "100") then
+            if(select_switches = "0010" or select_switches = "0100" or select_switches = "1000" or select_switches = "0001") then
                 count_clocks := count_clocks+1;
             else
                 count_clocks := 251;
@@ -184,10 +185,10 @@ display_time:
 --            end if;
             current_year := current_year + to_integer((current_time_internal/(24*3600) -num_leap_years)/365);-- valid  until 2100
                 case select_switches is
-                when "100" =>
+                when "1000" =>
                     digits_of_time := digits_of_time + to_integer((current_time_internal/60) mod 60);
                     digits_of_time := digits_of_time + to_integer((current_time_internal/3600) mod 24)*100;
-                when "010" =>
+                when "0100" =>
                     if(current_year mod 4 = 0) then
                         is_leap := '1'; 
                     else
@@ -257,8 +258,10 @@ display_time:
                         end if;
                         end if;
                     end if;
-                when "001" =>
+                when "0010" =>
                     digits_of_time := current_year;
+                when "0001" =>
+                    digits_of_time := to_integer(utc_time_offset);
                 when others =>
                     digits_of_time := (last_reading/10) mod 10000;
                     digits_of_time_global <= digits_of_time;
@@ -278,7 +281,7 @@ state_machine:
         if(sec_clock = '1' and sec_clock'event)
         then
             case select_switches is
-                when "100" =>
+                when "1000" =>
                     if(time_set_btn_prev = time_set_btn)
                     then
                         case(time_set_btn) is
@@ -327,7 +330,7 @@ state_machine:
                         end case;
                     end if;
                     --assign minutes/hr
-                when "010" =>
+                when "0100" =>
                     if(time_set_btn_prev = time_set_btn)
                     then
                         case(time_set_btn) is
@@ -376,7 +379,7 @@ state_machine:
                         end case;
                     end if;
                     --assign date/month
-                when "001" =>
+                when "0010" =>
                     if(time_set_btn_prev = time_set_btn)
                     then
                         case(time_set_btn) is
@@ -393,7 +396,27 @@ state_machine:
                         end case;
                     end if;
                     --assign year
-                 when "000" =>
+		 when "0001" =>
+			 if(time_set_btn_prev = time_set_btn)
+			 then
+				 if(time_set_btn = "00100") then
+					 if(utc_time_offset = to_unsigned(24, 32)) then
+						utc_time_offset <= to_unsigned(0, 32);
+					 else
+						 utc_time_offset <= utc_time_offset + to_unsigned(1, 32);
+					 end if;
+				  else if (time_set_btn = "00010") then
+					  if(utc_time_offset = to_unsigned(0, 32)) then
+						utc_time_offset <= to_unsigned(24, 32);
+					  else
+						 utc_time_offset <= utc_time_offset - to_unsigned(1, 32);
+					  end if;
+				  end if;
+				  end if;
+			  end if;
+
+
+                 when "0000" =>
                     current_time_internal <= current_time_internal + 1;
                  when others =>
                     current_time_internal <= current_time_internal;
@@ -406,5 +429,7 @@ state_machine:
             time_set_btn_prev <= time_set_btn;
         end if;
     end process state_machine;
-    current_time <= current_time_internal;
+    current_time <= current_time_internal-to_unsigned(to_integer(utc_time_offset)*3600, 32) when (utc_time_offset <= to_unsigned(12, 32))
+    else current_time_internal+to_unsigned(((24 - to_integer(utc_time_offset))*3600), 32);
+
 end Behavioral;
