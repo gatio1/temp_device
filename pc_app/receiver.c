@@ -9,9 +9,10 @@
 
 #include "receiver.h"
 
-#define TERM_FILE "/dev/ttyUSB1"
+#define TERM_DIR "/dev/"
+#define DEF_DEVICE "ttyUSB1"
 #define CSV_FILE  "csv_output.csv"
-#define ADJUST_TIMEZONE(val) do{if(val>3*3600) val -= 3*3600;}while(0);
+//#define ADJUST_TIMEZONE(val) do{if(val>3*3600) val -= 3*3600;}while(0);
 
 uint32_t reorder_bytes(void *word)
 {
@@ -67,7 +68,7 @@ int add_reading_to_csv(comm_struct *comm, reading_struct *reading)
 	char time_to_string[24];
 	char reading_to_string[16];
 	time_t read_time = (time_t)reading->time_of_reading;
-	ADJUST_TIMEZONE(read_time);
+	//ADJUST_TIMEZONE(read_time);
 	struct tm ts = *localtime(&read_time);
 	strftime(time_to_string, sizeof(time_to_string), "%Y/%m/%d/%H:%M:%S", &ts);
 	// snprintf(time_to_string, sizeof(time_to_string), "%u",strftime);
@@ -100,10 +101,12 @@ int add_reading_to_csv(comm_struct *comm, reading_struct *reading)
 
 int init_comm_struct(comm_struct *comm)
 {
-	comm->uart_dev_fd = open(TERM_FILE, O_RDWR);
+	char file_loc[64] = {0};
+	snprintf(file_loc, sizeof(file_loc), "%s%s", TERM_DIR, comm->dev_name[0] == '\0'?DEF_DEVICE:comm->dev_name); 
+	comm->uart_dev_fd = open(file_loc, O_RDWR);
 	if(comm->uart_dev_fd == -1)
 	{
-		printf("Failed to open file %s\n", TERM_FILE);
+		printf("Failed to open file %s\n", file_loc);
 		return -1;
 	}
 
@@ -151,7 +154,7 @@ int receive_data(comm_struct *comm)
 		read_st.time_of_reading = reorder_bytes((void*)readbuff);
 		read_st.reading = (int32_t)reorder_bytes((void*)(&readbuff[4]));
 		reading_time = (time_t)read_st.time_of_reading;
-		ADJUST_TIMEZONE(reading_time);
+		//ADJUST_TIMEZONE(reading_time);
 
 		add_reading_to_csv(comm, &read_st);
 
@@ -161,10 +164,22 @@ int receive_data(comm_struct *comm)
 	return 0;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+		
 	comm_struct comm = {0};
 	comm.csv_file_fd = comm.uart_dev_fd = -1;
+	if(argc == 1)
+		comm.dev_name[0] = '\0';
+	else if(argc == 2)
+	{
+		snprintf(comm.dev_name, 10, "%s", argv[1]);
+	}
+	else
+	{
+		printf("Invalid arguments passed.\n");
+		return -1;
+	}
 	
 	if(0 != init_comm_struct(&comm))
 		return -1;
