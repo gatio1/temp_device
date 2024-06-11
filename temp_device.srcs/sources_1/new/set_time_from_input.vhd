@@ -44,6 +44,27 @@ entity set_time_from_input is
 end set_time_from_input;
 
 architecture Behavioral of set_time_from_input is
+    -- months constants(seconds from beginning of year to end of month):
+    constant days_jan: integer := 31;
+    constant days_feb_l: integer := 60;
+    constant days_feb: integer := 59;
+    constant days_mar: integer := 90;
+    constant days_apr: integer := 120;
+    constant days_may: integer := 151;
+    constant days_jun: integer := 181;
+    constant days_jul: integer := 212;
+    constant days_aug: integer := 243;
+    constant days_sep: integer := 273;
+    constant days_oct: integer := 304;
+    constant days_nov: integer := 334;
+    
+     
+    constant sec_in_minute: integer := 60;
+    constant sec_in_hour: integer := 3600;
+    constant sec_in_day: integer := 86400;
+    constant sec_normal_year: integer := 31536000;
+    constant sec_four_years: integer := 126230400; --three normal plus one leap year
+
     signal time_set_btn_prev: std_logic_vector(0 to 4) := "00000"; 
     signal current_time_internal: unsigned(0 to 31) := to_unsigned(43200, 32); -- start at 12pm on 01.01.1970
     signal seven_seg_select_internal: std_logic_vector(0 to 3) := "1110";
@@ -154,8 +175,6 @@ display_time:
     variable days_of_year: natural := 1;
     variable num_leap_years: unsigned(0 to 7);
     variable is_leap: bit := '0';
-    variable days_in_months_so_far: natural := 0;
-    variable months_done: bit := '0';
     variable tmp_32b: unsigned(0 to 31) := to_unsigned(0, 32);
 --    variable disp_select: std_logic_vector;
     variable digits_of_time: natural range 0 to 9999 :=0;
@@ -167,15 +186,13 @@ display_time:
             current_year := 1970;
 --            num_leap_years := to_unsigned(1, num_leap_years'length);
             days_of_year := 1;
-            days_in_months_so_far := 0;
-            months_done := '0';
             is_leap := '0';
             tmp_32b := to_unsigned(0, 32);
             
 --            if((current_time_internal/(3600*24*365))/4 <
-            if (current_time_internal/(3600*24*365) > 4) then
-                tmp_32b := 1 + (current_time_internal/(3600*24) - (365*2+366))/(365*3+366);--  Accurate number of leap years
-            else if (current_time_internal/(3600*24) > 365*2+366) then
+            if (current_time_internal/sec_normal_year > 4) then
+                tmp_32b := 1 + (current_time_internal - (sec_four_years-sec_normal_year))/sec_four_years;--  Accurate number of leap years
+            else if (current_time_internal > (sec_four_years - sec_normal_year)) then
                     tmp_32b := to_unsigned(1, 32);
                 end if;
             end if;
@@ -183,7 +200,7 @@ display_time:
 --            if(num_leap_years /= (current_time_internal/(3600*24*365) + 3600*24*num_leap_years)/4) then
 --                num_leap_years := num_leap_years + 1;            
 --            end if;
-            current_year := current_year + to_integer((current_time_internal/(24*3600) -num_leap_years)/365);-- valid  until 2100
+                current_year := current_year + to_integer((current_time_internal/(sec_in_day) - num_leap_years)/365); -- valid  until 2100
                 case select_switches is
                 when "1000" =>
                     digits_of_time := digits_of_time + to_integer((current_time_internal/60) mod 60);
@@ -194,68 +211,78 @@ display_time:
                     else
                         is_leap := '0';
                     end if;
-                    days_of_year := to_integer(current_time_internal)/(24*3600)+1; -- total days since 1970
+                    days_of_year := to_integer(current_time_internal)/sec_in_day+1; -- total days since 1970
                     days_of_year := days_of_year - 365*(current_year-1970) - to_integer(num_leap_years);
-                    if(days_of_year < 32)then --january
+                    if(days_of_year <= days_jan)then --january
                         digits_of_time := digits_of_time + days_of_year+100;
-                        months_done := '1';
-                    else days_in_months_so_far := days_in_months_so_far + 31; 
-                        if is_leap = '1' then --february
-                            if days_of_year - days_in_months_so_far < 30 then
-                                digits_of_time := digits_of_time + days_of_year+200 - days_in_months_so_far;
-                                months_done := '1';
+                        else if is_leap = '1' then --february
+                            if days_of_year <= days_feb_l then
+                                digits_of_time := digits_of_time + days_of_year+200 - days_jan;
                             else
-                                days_in_months_so_far := days_in_months_so_far + 29;
+                                if(days_of_year <= days_mar + 1)then --march
+                                digits_of_time := digits_of_time + days_of_year + 300 - days_feb_l;
+                                else if days_of_year <= days_apr + 1 then --april
+                                digits_of_time := digits_of_time + days_of_year + 400 - days_mar - 1;
+                                else if days_of_year <= days_may + 1 then --may
+                                digits_of_time := digits_of_time + days_of_year + 500 - days_apr - 1;
+                                else if days_of_year <= days_jun + 1 then --june
+                                digits_of_time := digits_of_time + days_of_year + 600 - days_may - 1;
+                                else if days_of_year <= days_jul + 1 then --july
+                                digits_of_time := digits_of_time + days_of_year + 700 - days_jun - 1;
+                                else if days_of_year <= days_aug+1 then --august
+                                digits_of_time := digits_of_time + days_of_year + 800 - days_jul - 1;
+                                else if days_of_year <= days_sep + 1 then --september
+                                digits_of_time := digits_of_time + days_of_year + 900 - days_aug - 1;
+                                else if days_of_year <= days_oct + 1 then --october
+                                digits_of_time := digits_of_time + days_of_year + 1000 - days_sep - 1;
+                                else if days_of_year <= days_nov + 1 then --november
+                                digits_of_time := digits_of_time + days_of_year + 1100 - days_oct - 1;
+                                else --december
+                                digits_of_time := digits_of_time + days_of_year + 1200 - days_nov - 1;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
                             end if;
                         else  
-                            if days_of_year - days_in_months_so_far < 29 then
-                                digits_of_time := digits_of_time + days_of_year+200 - days_in_months_so_far;
-                                months_done := '1';
+                            if days_of_year <= days_feb then
+                                digits_of_time := digits_of_time + days_of_year+200 - days_jan;
                             else
-                                days_in_months_so_far := days_in_months_so_far + 28;
+                                if(days_of_year <= days_mar)then --march
+                                digits_of_time := digits_of_time + days_of_year + 300 - days_feb;
+                                else if days_of_year <= days_apr then --april
+                                digits_of_time := digits_of_time + days_of_year + 400 - days_mar;
+                                else if days_of_year <= days_may then --may
+                                digits_of_time := digits_of_time + days_of_year + 500 - days_apr;
+                                else if days_of_year <= days_jun then --june
+                                digits_of_time := digits_of_time + days_of_year + 600 - days_may;
+                                else if days_of_year <= days_jul then --july
+                                digits_of_time := digits_of_time + days_of_year + 700 - days_jun;
+                                else if days_of_year <= days_aug then --august
+                                digits_of_time := digits_of_time + days_of_year + 800 - days_jul;
+                                else if days_of_year <= days_sep then --september
+                                digits_of_time := digits_of_time + days_of_year + 900 - days_aug;
+                                else if days_of_year <= days_oct then --october
+                                digits_of_time := digits_of_time + days_of_year + 1000 - days_sep;
+                                else if days_of_year <= days_nov then --november
+                                digits_of_time := digits_of_time + days_of_year + 1100 - days_oct;
+                                else --december
+                                digits_of_time := digits_of_time + days_of_year + 1200 - days_nov;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;
+                                end if;                             
                             end if;
-                        end if;
-                    end if;
-                    if(months_done = '0')
-                    then
-                        if(days_of_year - days_in_months_so_far < 32)then --march
-                        digits_of_time := digits_of_time + days_of_year + 300 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 31; 
-                        if days_of_year - days_in_months_so_far < 31 then --april
-                        digits_of_time := digits_of_time + days_of_year + 400 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 30;
-                        if days_of_year - days_in_months_so_far < 32 then --may
-                        digits_of_time := digits_of_time + days_of_year + 500 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 31;
-                        if days_of_year - days_in_months_so_far < 31 then --june
-                        digits_of_time := digits_of_time + days_of_year + 600 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 30;
-                        if days_of_year - days_in_months_so_far < 32 then --july
-                        digits_of_time := digits_of_time + days_of_year + 700 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 31;
-                        if days_of_year - days_in_months_so_far < 32 then --august
-                        digits_of_time := digits_of_time + days_of_year + 800 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 31;
-                        if days_of_year - days_in_months_so_far < 31 then --september
-                        digits_of_time := digits_of_time + days_of_year + 900 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 30;
-                        if days_of_year - days_in_months_so_far < 32 then --october
-                        digits_of_time := digits_of_time + days_of_year + 1000 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 31;
-                        if days_of_year - days_in_months_so_far < 31 then --november
-                        digits_of_time := digits_of_time + days_of_year + 1100 - days_in_months_so_far;
-                        else days_in_months_so_far := days_in_months_so_far + 30;
-                        if days_of_year - days_in_months_so_far < 32 then --december
-                        digits_of_time := digits_of_time + days_of_year + 1200 - days_in_months_so_far;
-                        end if;
-                        end if;
-                        end if;
-                        end if;
-                        end if;
-                        end if;
-                        end if;
-                        end if;
-                        end if;
                         end if;
                     end if;
                 when "0010" =>
@@ -267,9 +294,7 @@ display_time:
                     digits_of_time_global <= digits_of_time;
              end case;
              digits_of_time_global <= digits_of_time;
---                for i in 0 to 3 loop
-                    
---                end loop;
+
         end if;
     end process display_time;
     

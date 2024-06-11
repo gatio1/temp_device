@@ -114,8 +114,7 @@ begin
         
         if(new_data = not new_data_prev)
         then
---            if(byte_pointer >= 63) -- assign new byte only if old one is fully transmitted.
---            then
+
                 byte_pointer <= 8;
                 send_byte <= backwards_array(send_data.timestamp(0 to 7));
                 new_byte <= not new_byte;

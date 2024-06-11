@@ -182,7 +182,7 @@ begin
             -- The transfer function of the temperature sensor is 0.123 for every lsb in the adc reading.
             -- We will represent the temperature in 1housandths of the degree.
             reading_tmp := f_adc_reading_lmt70_conversion(unsigned(adc_reading));
---            reading_tmp := to_integer(unsigned(adc_reading));
+--            reading_tmp := to_integer(unsigned(adc_reading)); -- Read chip temperature
 --            reading_tmp := reading_tmp*123 -273150;
             last_reading_internal <= reading_tmp;
             send_data.temp_data <= to_signed(reading_tmp, send_data.temp_data'length);

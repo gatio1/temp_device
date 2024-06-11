@@ -66,11 +66,6 @@ end component register_11b;
     signal Q: std_logic_vector(0 to 10);
     
     signal send_symbol: std_logic_vector(0 to 10) := "11111111111";
---    signal masked_data: std_logic_vector(0 to 10) := "11111111111";
---    signal send_data: std_logic_vector(0 to 7) := "00000000";
---    signal or_res: std_logic := '1';
---    signal last_bit: std_logic := '0';
---    signal baud_init_cnt: natural range 0 to 2 := 0;
     signal is_set_prev: std_logic := '0';
 begin
 reg_11: register_11b port map(
@@ -81,12 +76,6 @@ reg_11: register_11b port map(
     Q => Q   
 );
 
---init_process:
---    process
---    begin
---        tx <= '1';
---        wait;
---    end process init_process;
 send_bit:
     process(baud_clock) is
     variable masked_data: std_logic_vector(0 to 10) := "11111111111";
@@ -98,12 +87,8 @@ send_bit:
         then  
             if enable_set = '1' then
                     
---                baud_init_cnt <= baud_init_cnt+1;
---                if baud_init_cnt = 2 then
                     enable_set <= '0';
                     is_set_prev <= is_set;
-                    
---                end if;
             
             else            
                 for i in 0 to 10 loop
@@ -113,15 +98,6 @@ send_bit:
                 masked_data(5) or masked_data(6) or masked_data(7) or masked_data(8) or 
                 masked_data(9) or masked_data(10);
                 tx <= or_res;
-                
---                if last_bit = '1' then
---                    is_busy <= '0';
---                end if;
-                
---                if (Q(9) = '1')
---                then
---                    last_bit <= '1';
---                end if;
                 
                 if (Q(9) = '1') then
                     is_busy <= '0';

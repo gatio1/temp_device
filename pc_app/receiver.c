@@ -26,9 +26,6 @@ int fill_config_for_uart(int uart_fd, struct termios *term)
 		printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
 	}
 
-	term->c_cflag &= ~PARENB;
-	term->c_cflag |= PARENB;
-
 	term->c_cflag &= ~CSTOPB;
 
 	term->c_cflag &= ~CSIZE;
