@@ -44,14 +44,14 @@ signal clk_internal: std_logic := '1';
 begin
 count_baud:    
     process(clk_in) is
-    variable clock_dev: natural range 0 to 1000 := 434;
+    variable clock_dev: natural range 0 to 1000 := 434; -- invert signal every 434 clocks to get 115200Hz
     begin
         if(clk_in = '1' and clk_in'event)
         then
             clock_dev := clock_dev - 1;
             if clock_dev = 0
             then
-                clk_internal <= not clk_internal;
+                clk_internal <= not clk_internal; --invert clk signal
                 clock_dev := 434;
             end if;
         end if;

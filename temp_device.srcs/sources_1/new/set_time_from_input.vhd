@@ -59,6 +59,7 @@ architecture Behavioral of set_time_from_input is
     constant days_nov: integer := 334;
     
      
+    -- Time constants
     constant sec_in_minute: integer := 60;
     constant sec_in_hour: integer := 3600;
     constant sec_in_day: integer := 86400;
@@ -218,7 +219,7 @@ display_time:
                         else if is_leap = '1' then --february
                             if days_of_year <= days_feb_l then
                                 digits_of_time := digits_of_time + days_of_year+200 - days_jan;
-                            else
+                            else --year is leap
                                 if(days_of_year <= days_mar + 1)then --march
                                 digits_of_time := digits_of_time + days_of_year + 300 - days_feb_l;
                                 else if days_of_year <= days_apr + 1 then --april
@@ -252,7 +253,7 @@ display_time:
                         else  
                             if days_of_year <= days_feb then
                                 digits_of_time := digits_of_time + days_of_year+200 - days_jan;
-                            else
+                            else --year is normal
                                 if(days_of_year <= days_mar)then --march
                                 digits_of_time := digits_of_time + days_of_year + 300 - days_feb;
                                 else if days_of_year <= days_apr then --april
@@ -306,7 +307,7 @@ state_machine:
         if(sec_clock = '1' and sec_clock'event)
         then
             case select_switches is
-                when "1000" =>
+                when "1000" => --assign minutes/hr
                     if(time_set_btn_prev = time_set_btn)
                     then
                         case(time_set_btn) is
@@ -354,8 +355,8 @@ state_machine:
                             current_time_internal <= current_time_internal;
                         end case;
                     end if;
-                    --assign minutes/hr
-                when "0100" =>
+                    
+                when "0100" => --assign date/month
                     if(time_set_btn_prev = time_set_btn)
                     then
                         case(time_set_btn) is
@@ -403,8 +404,8 @@ state_machine:
                             current_time_internal <= current_time_internal; 
                         end case;
                     end if;
-                    --assign date/month
-                when "0010" =>
+                    
+                when "0010" =>--assign year
                     if(time_set_btn_prev = time_set_btn)
                     then
                         case(time_set_btn) is
@@ -420,8 +421,8 @@ state_machine:
                             current_time_internal <= current_time_internal;
                         end case;
                     end if;
-                    --assign year
-		 when "0001" =>
+                    
+		 when "0001" => --assign utc offset
 			 if(time_set_btn_prev = time_set_btn)
 			 then
 				 if(time_set_btn = "00100") then
@@ -439,7 +440,7 @@ state_machine:
 				  end if;
 				  end if;
 			  end if;
-
+                    
 
                  when "0000" =>
                     current_time_internal <= current_time_internal + 1;

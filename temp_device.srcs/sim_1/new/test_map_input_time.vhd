@@ -39,7 +39,7 @@ architecture Behavioral of test_map_input_time is
 signal clk_100M : std_logic;
 signal sec_internal : std_logic;
 signal ms_internal : std_logic;
-signal select_switches : std_logic_vector(0 to 2) := "001";
+signal select_switches : std_logic_vector(0 to 3) := "0000";
 signal time_set_btn : std_logic_vector(0 to 4) := "00100";
 signal current_time_internal : unsigned(0 to 31) := to_unsigned(0, 32);
 signal last_reading_internal : integer := 0;
@@ -51,7 +51,7 @@ component set_time_from_input is
 port(
     signal ms_clock: in std_logic;
     signal sec_clock: in std_logic;
-    signal select_switches: in std_logic_vector(0 to 2);
+    signal select_switches: in std_logic_vector(0 to 3);
     signal time_set_btn: in std_logic_vector(0 to 4);
     signal current_time: out unsigned(0 to 31); -- time in seconds since epoch
     signal last_reading: in integer := 0;
