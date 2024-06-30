@@ -193,7 +193,7 @@ begin
         end if;
         if( sec_internal = not sec_internal_prev and sec_internal = '1')
         then
-            if(num_sec = 0)
+            if(num_sec = 9)
             then
                 adc_request <= '1';
                 num_sec := 0;

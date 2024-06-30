@@ -156,7 +156,7 @@ int receive_data(comm_struct *comm)
 
 		add_reading_to_csv(comm, &read_st);
 
-		printf("timestamp: %s, data: %d.%03d\n", ctime(&reading_time), read_st.reading/1000, read_st.reading%1000);
+		printf("timestamp: %u, %s, data: %d.%03d\n", read_st.time_of_reading, ctime(&reading_time), read_st.reading/1000, read_st.reading%1000);
 		read_B = 0;
 	}
 	return 0;
