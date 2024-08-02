@@ -41,6 +41,34 @@ port(
     signal is_busy: out std_logic);
 end component send_uart_symbol;
 
+component receive_uart_symbol is
+port(
+    signal baud_clock: in std_logic;
+    signal rx: in std_logic;
+    signal byte: out std_logic_vector(0 to 7);
+    signal valid: out std_logic := '0';
+    signal new_val: out std_logic := '0');
+end component receive_uart_symbol;
+
+component fifo_init
+port(
+    signal ALMOSTEMPTY: out std_logic;
+    signal ALMOSTFULL: out std_logic;
+    signal DO: out std_logic_vector(8 downto 0);
+    signal EMPTY: out std_logic;
+    signal FULL: out std_logic;
+    signal RDCOUNT: out std_logic_vector(11 downto 0);
+    signal RDERR: out std_logic;
+    signal WRCOUNT: out std_logic_vector(11 downto 0);
+    signal WRERR: out std_logic;
+    signal DI: in std_logic_vector(8 downto 0);
+    signal RDCLK: in std_logic;
+    signal RDEN: in std_logic;
+    signal RST: in std_logic;
+    signal WRCLK: in std_logic;
+    signal WREN: in std_logic);
+end component fifo_init;
+
 component seconds_clk
 port(
     signal clk_in:in std_logic;

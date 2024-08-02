@@ -41,14 +41,6 @@ entity receive_uart_symbol is
 end receive_uart_symbol;
 
 architecture Behavioral of receive_uart_symbol is
-component register_11b
-port(
-    signal D: in std_logic_vector(0 to 10);
-    signal enable_set: in std_logic;
-    signal clk: in std_logic;
-    signal shiftR: in std_logic;
-    signal Q: out std_logic_vector(0 to 10));
-end component register_11b;
     
     signal D: std_logic_vector(0 to 10) := "10000000000";
     signal enable_set: std_logic := '1';
@@ -58,16 +50,9 @@ end component register_11b;
     
     signal counter: natural range 0 to 10 := 0;
     signal started: std_logic := '0'; 
-    signal read_byte: std_logic_vector(0 to 7) := "111111111";  
-    signal in_data: std_logic_vector(0 to 10) := "111111111111";
+    signal read_byte: std_logic_vector(0 to 7) := "11111111";  
+    signal in_data: std_logic_vector(0 to 10) := "11111111111";
 begin
-reg_11: register_11b port map(
-    D => D,
-    enable_set => enable_set,
-    clk => clk,
-    shiftR => shiftR,
-    Q => Q   
-);
 
 receive_byte:
 process (baud_clock) is
@@ -89,6 +74,7 @@ begin
         if(counter < 9 and counter /= 0)
         then 
             read_byte(counter-1) <= rx;
+	    counter<=counter+1;
         end  if;
         
         if(counter = 9)
@@ -101,21 +87,22 @@ begin
             else
                 internal_valid := '0'; 
             end if;
+	    counter <= counter+1;
+	   end if;
             
-            if(counter = 9)
-            then
-                if rx = '1'
-                then
-                    internal_valid := internal_valid and '1';
-                else
-                    internal_valid := '0';
-                end if;
-                counter <= 0;
-                byte <= read_byte;
-                valid <= internal_valid;
-                new_val <= '1';
-            end if;
-        end if;
+	    if(counter = 10)
+	    then
+		if rx = '1'
+		then
+		    internal_valid := internal_valid and '1';
+		else
+		    internal_valid := '0';
+		end if;
+		counter <= 0;
+		byte <= read_byte;
+		valid <= internal_valid;
+		new_val <= '1';
+	    end if;
     end if;
 end process receive_byte;
 
