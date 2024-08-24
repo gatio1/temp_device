@@ -93,6 +93,9 @@ architecture Behavioral of uart_controller is
     signal last_command: command := C_NO;
     signal size_byte : natural range 0 to 4 := 0;
     
+    signal read_new: std_logic := '0'; -- Make this signal to read from flash.
+    signal repeat: std_logic := '0';
+    
     function decode_command(
         in_char: in std_logic_vector(0 to 7))
         return command is
@@ -142,6 +145,7 @@ serialize_uart_data port map(
     new_data => new_data,
     send_data => send_data,
     clk => clk,
+    repeat => repeat,
     tx_uart => tx_uart
     );
     
@@ -197,8 +201,10 @@ begin
                     when C_OK => 
                         READ_STATE <= S_BEGIN;
                     when C_NEXT =>
+                        read_new <= '1';
                         READ_STATE <= S_BEGIN;
                     when C_REP =>
+                        repeat <= '1'; -- Repeat signal to serialize uart.
                         READ_STATE <= S_BEGIN;
                     when C_DATA =>
                         READ_STATE <= S_SIZE;

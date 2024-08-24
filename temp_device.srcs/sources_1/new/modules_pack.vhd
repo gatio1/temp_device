@@ -109,6 +109,7 @@ port(
     signal new_data : in std_logic;
     signal send_data: in send_data_struct;
     signal clk: in std_logic;
+    signal repeat: in std_logic;
     signal tx_uart: out std_logic
     );
 end component serialize_uart_data;

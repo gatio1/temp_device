@@ -39,6 +39,7 @@ port(
     signal new_data : in std_logic; -- initial value should be 1.
     signal send_data: in send_data_struct;
     signal clk: in std_logic;
+    signal repeat: in std_logic;
     signal tx_uart: out std_logic
     );
 end serialize_uart_data;
@@ -108,7 +109,13 @@ begin
                     new_byte <= not new_byte;
                 end if;
             else
-                current_data_done <= '1';
+                if(repeat = '1')
+                then
+                    byte_pointer <= 0;
+                    current_data_done <= '0';
+                else
+                    current_data_done <= '1';
+                end if;
             end if;
         end if;
         
