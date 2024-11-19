@@ -57,9 +57,9 @@ port(
     signal DO: out std_logic_vector(8 downto 0);
     signal EMPTY: out std_logic;
     signal FULL: out std_logic;
-    signal RDCOUNT: out std_logic_vector(11 downto 0);
+    signal RDCOUNT: out std_logic_vector(10 downto 0);
     signal RDERR: out std_logic;
-    signal WRCOUNT: out std_logic_vector(11 downto 0);
+    signal WRCOUNT: out std_logic_vector(10 downto 0);
     signal WRERR: out std_logic;
     signal DI: in std_logic_vector(8 downto 0);
     signal RDCLK: in std_logic;
@@ -109,9 +109,49 @@ port(
     signal new_data : in std_logic;
     signal send_data: in send_data_struct;
     signal clk: in std_logic;
-    signal repeat: in std_logic;
+    signal repeat: in std_logic := '0';
     signal tx_uart: out std_logic
     );
 end component serialize_uart_data;
+
+component uart_controller
+port(
+	new_data: in std_logic;
+	new_data_request: out std_logic;
+	tx_send_data: in send_data_struct;
+	clk: in std_logic;
+	tx: out std_logic;
+	rx: in std_logic
+);
+end component uart_controller;
+
+component axi_spi_if
+port(
+    io0 : INOUT STD_LOGIC;
+    io1 : INOUT STD_LOGIC;
+    io2 : INOUT STD_LOGIC;
+    io3 : INOUT STD_LOGIC;
+
+    ss : INOUT STD_LOGIC_VECTOR(0 DOWNTO 0);
+    cfgclk : OUT STD_LOGIC;
+    cfgmclk : OUT STD_LOGIC;
+    eos : OUT STD_LOGIC;
+    preq : OUT STD_LOGIC;
+    ip2intc_irpt : OUT STD_LOGIC ;
+    clk: in std_logic;
+    
+    new_data: in std_logic;
+    new_data_struct: in send_data_struct;
+    
+    reset_flash_on_init: in std_logic;
+    save_current_flash_state: in std_logic;    
+
+    read_request: in std_logic;
+    read_ready: out std_logic := '0';
+    new_data_read: out send_data_struct
+
+);
+end component axi_spi_if;
+
 
 end package modules_pack;

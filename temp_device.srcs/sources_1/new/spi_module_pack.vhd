@@ -48,9 +48,19 @@ type command is
 
 type action is
 (WRITE_ENTRY, READ_ENTRY, DELETE_ALL, GET_ADDR, NO_ACTION); -- Only internal to wrapper. Used for a state machine. Internally this state machine contains state machine with the commands for each operation.
+type axi_action is
+(AXI_WRITE_ADDR, -- WRITE current read and writye addresses to fglash.
+AXI_READ_ADDR, -- READ memory where address is saved on flash
+AXI_WRITE_DATA, -- Writing a data entry
+AXI_READ_DATA, -- Reading a data entry
+NO_AXI_ACTION
+);
 
 component spi_mem_if
 port(
+    addr_in: in std_logic_vector(24 downto 0);
+    cur_comm: in command;
+    new_command: in std_logic;
     clk:in std_logic;
     wr_rd_flag:in std_logic;
     init_flash_sw: in std_logic; -- Switch that will reset flash on init

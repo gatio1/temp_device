@@ -21,10 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.modules_pack.send_data_struct;
-use work.modules_pack.fifo_init;
-use work.modules_pack.serialize_uart_data;
-use work.modules_pack.receive_uart_symbol;
+use work.modules_pack.all;
 
 
 -- Uncomment the following library declaration if using
@@ -38,15 +35,12 @@ use work.modules_pack.receive_uart_symbol;
 
 entity uart_controller is
 Port (
+	signal new_data :in std_logic; 
+	signal new_data_request :out std_logic := '0';
+	signal tx_send_data: in send_data_struct;
+	signal clk :in std_logic;
 	signal tx :out std_logic;
-	signal rx :in std_logic;
-	signal baud_clock :in std_logic;
-	signal tx_byte: in std_logic;
-	signal rx_valid: in std_logic;
-	
-	signal tx_uart: out std_logic;
-	signal tx_send_data: out send_data_struct;
-	signal clk :in std_logic
+	signal rx :in std_logic
 	);
 end uart_controller;
 
@@ -54,6 +48,9 @@ architecture Behavioral of uart_controller is
     
     type command is
     (C_NO, C_OK, C_NEXT, C_REP, C_DATA); -- What kind of command is received?
+
+    type exp_rcv is
+    (A_CONFIRM, A_COMMAND, A_STRING);
 
     type read_state_t is
     (S_BEGIN, S_SIZE, S_STR); -- State of fifo read
@@ -63,9 +60,9 @@ architecture Behavioral of uart_controller is
 	signal DO: std_logic_vector(8 downto 0) := "000000000";
 	signal EMPTY: std_logic := '0';
 	signal FULL: std_logic := '0';
-	signal RDCOUNT: std_logic_vector(11 downto 0) := "00000000000";
+	signal RDCOUNT: std_logic_vector(10 downto 0) := "00000000000";
 	signal RDERR: std_logic := '0';
-	signal WRCOUNT: std_logic_vector(11 downto 0) := "00000000000";
+	signal WRCOUNT: std_logic_vector(10 downto 0) := "00000000000";
 	signal WRERR: std_logic := '0';
 	signal DI: std_logic_vector(8 downto 0) := "000000000";
 	signal RDCLK: std_logic := '0';
@@ -73,28 +70,33 @@ architecture Behavioral of uart_controller is
 	signal RST: std_logic := '0';
 	signal WRCLK: std_logic := '0';
 	signal WREN: std_logic := '0';
-	
-	signal new_data :std_logic;
+
+	signal baud_clk : std_logic := '0';
+
+    	signal new_data_request_internal :std_logic := '0';
+	signal new_data_internal :std_logic;
 	signal send_data : send_data_struct;
+    	signal tx_send_data_internal : send_data_struct;
 	
-    signal rx_byte: std_logic_vector(0 to 7) := "11111111";
-    signal new_val: std_logic := '0';
-    signal valid: std_logic := '0';
+	signal rx_byte: std_logic_vector(0 to 7) := "11111111";
+	signal new_val: std_logic := '0';
+	signal valid: std_logic := '0';
 
 
-    signal last_fifo_state: std_logic := '0';
-    
-    signal b_to_read: natural := 0; -- Number of bytes left in current responce.
-    signal processed: std_logic := '0'; -- 1 if last data fetched from fifo is processed.
-    signal exp_size: std_logic := '0'; -- Indicates that size of string is expected.
-    signal fifo_read_b: std_logic_vector(0 to 7) := "00000000";
-    signal read_state: read_state_t := S_BEGIN;
-    
-    signal last_command: command := C_NO;
-    signal size_byte : natural range 0 to 4 := 0;
-    
-    signal read_new: std_logic := '0'; -- Make this signal to read from flash.
-    signal repeat: std_logic := '0';
+	signal last_fifo_state: std_logic := '0';
+
+	signal b_to_read: natural := 0; -- Number of bytes left in current responce.
+	signal processed: std_logic := '0'; -- 1 if last data fetched from fifo is processed.
+	signal exp_size: std_logic := '0'; -- Indicates that size of string is expected.
+	signal fifo_read_b: std_logic_vector(0 to 7) := "00000000";
+	signal read_state: read_state_t := S_BEGIN;
+    	signal action: exp_rcv := A_COMMAND;
+
+	signal last_command: command := C_NO;
+	signal size_byte : natural range 0 to 4 := 0;
+
+	signal read_new: std_logic := '0'; -- Make this signal to read from flash.
+	signal repeat: std_logic := '0';
     
     function decode_command(
         in_char: in std_logic_vector(0 to 7))
@@ -108,7 +110,7 @@ architecture Behavioral of uart_controller is
             new_command := C_DATA;
         when "01001011" => -- 'K'
             new_command := C_OK;
-        when "01010010" => -- 'N'
+        when "01001110" => -- 'N'
             new_command := C_NEXT;
         when others => -- Unrecognised
             new_command := C_NO;
@@ -140,18 +142,24 @@ fifo_init port map(
    WREN => WREN
    );
    
+map_baud_gen:
+generate_baud port map(
+	clk_in => clk,
+	clk_out => baud_clk
+);
+
 map_serialize_uart:
 serialize_uart_data port map(
-    new_data => new_data,
+    new_data => new_data_internal,
     send_data => send_data,
     clk => clk,
     repeat => repeat,
-    tx_uart => tx_uart
+    tx_uart => tx
     );
     
 map_receive_uart_symbol:
 receive_uart_symbol port map(
-    baud_clock => baud_clock,
+    baud_clock => baud_clk,
     rx => rx,
     byte => rx_byte,
     valid => valid,
@@ -167,20 +175,49 @@ variable last_command: command;
 begin
     if(clk'event and clk = '1')
     then
-        if(new_data = '1' and valid = '1')
+	if(valid = '1') -- Assume valid means new value has been received via uart.
         then
-		if(FULL = '0')
-		then
-			if(WREN = '1')
-			then
-				WREN <= '0';
-			else
-				DI(7 downto 0) <= rx_byte;
-			       	DI(8) <= '0';
-				WREN <= '1';	
-			end if;
-		end if;
+		--if(action = A_COMMAND)
+		--then
+			case (decode_command(rx_byte)) is
+				when C_NEXT => -- request next entry from flash
+					new_data_request_internal <= '1';			
+					action <= A_COMMAND;
+				when C_REP => -- Repeat last entry sent
+					new_data_internal <= not new_data_internal; -- signal that last sent data is valid.
+					action <= A_CONFIRM;
+				when C_DATA => -- Expect first 4 bytes to br data size.
+					action <= A_STRING;
+					if(FULL = '0') -- Add byte to fifo when command is not C_DATA.
+					then
+						if(WREN = '1')
+						then
+							WREN <= '0';
+						else
+							DI(7 downto 0) <= rx_byte;
+							DI(8) <= '0';
+							WREN <= '1';	
+						end if;
+					end if;
+				when C_NO =>
+					new_data_request_internal <= '0';
+				when C_OK => 
+					action <= A_COMMAND;
+					new_data_request_internal <= '0';
+				when others =>
+					new_data_request_internal <= '0';
+			end case;
+		--end if;
+	else
+		new_data_request_internal <= '0';
         end if;
+
+	if(new_data = '1')
+	then
+		send_data <= tx_send_data;
+		tx_send_data_internal <= tx_send_data;
+		new_data_internal <= '1';		
+	end if;
         
         if(processed = '1')
         then
@@ -198,15 +235,15 @@ begin
                 case last_command is
                     when C_NO =>
                         read_state <= S_BEGIN;
-                    when C_OK => 
+                    when C_OK => -- Do nothing 
                         READ_STATE <= S_BEGIN;
-                    when C_NEXT =>
+		    when C_NEXT => -- request next byte to be read from flash Shouldn't be written in fifo. process in real time.
                         read_new <= '1';
                         READ_STATE <= S_BEGIN;
-                    when C_REP =>
+                    when C_REP => -- Resend last sent item
                         repeat <= '1'; -- Repeat signal to serialize uart.
                         READ_STATE <= S_BEGIN;
-                    when C_DATA =>
+		    when C_DATA => -- Expect size of data in bytes and then data as long as the 32 bit size.
                         READ_STATE <= S_SIZE;
                     when others =>
                         READ_STATE <= S_BEGIN;
@@ -217,4 +254,5 @@ begin
         end if;
     end if;
 end process rx_to_fifo;
+new_data_request <= new_data_request_internal;
 end Behavioral;

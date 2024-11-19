@@ -60,4 +60,5 @@ gen_baud:
         clk_in <= '0';
         wait for 5ns;
     end process;
+
 end Behavioral;

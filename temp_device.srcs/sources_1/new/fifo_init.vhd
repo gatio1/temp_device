@@ -29,9 +29,9 @@ port(
 	signal DO: out std_logic_vector(8 downto 0);
 	signal EMPTY: out std_logic;
 	signal FULL: out std_logic;
-	signal RDCOUNT: out std_logic_vector(11 downto 0);
+	signal RDCOUNT: out std_logic_vector(10 downto 0);
 	signal RDERR: out std_logic;
-	signal WRCOUNT: out std_logic_vector(11 downto 0);
+	signal WRCOUNT: out std_logic_vector(10 downto 0);
 	signal WRERR: out std_logic;
 	signal DI: in std_logic_vector(8 downto 0);
 	signal RDCLK: in std_logic;

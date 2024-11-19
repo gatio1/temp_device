@@ -68,6 +68,13 @@ architecture Behavioral of spi_wrapper is
     
     signal to_do: action := NO_ACTION;
     
+    signal read_addr: std_logic_vector(23 downto 0);
+    signal write_addr: std_logic_vector(23 downto 0);
+    
+    signal cur_comm: command := NOP;
+    signal new_command: std_logic := '0';
+    signal spi_rd_wr_comm :std_logic := '0'; -- Used to indicate from mem_if that read is expected.
+    
     -- signal read_out: send_data_struct; -- When reading data
     -- signal progress: natural := 0;
     -- signal read_ready: std_logic
@@ -87,6 +94,9 @@ spi_read_if port map(
 
 map_spi_mem_if:
 spi_mem_if port map(
+    addr_in => write_addr,
+    cur_comm => cur_comm,
+    new_command => new_command,
     clk => clk,
     wr_rd_flag => wr_rd_flag,
     init_flash_sw => init_flash_sw,
@@ -101,17 +111,23 @@ process (clk)
 begin
     if(clk'event and clk = '1')
     then
+    
+    
         -- set CS pin to low when starting an operation.
         -- CS is set to low again by higher modules.
-        if(write_request = '1')
+        if(write_request = '1' and to_do = NO_ACTION)
         then
             to_do <= WRITE_ENTRY;
+            -- write_request <= '0';
+            
+            -- start checking status
             -- send write request
         end if;
         
         if(read_request = '1' and to_do = NO_ACTION)
         then
             to_do <= READ_ENTRY;
+            -- read_request <= '0';
             -- send read request
         end if;
         
@@ -124,9 +140,66 @@ begin
         then
         end if;
         
+        
+        
+        
        -- Add erase functionality and address location.
+        case to_do is
+        when WRITE_ENTRY => --Add actions.
+            if(finish = '1')
+            then
+                case cur_comm is
+                when NOP =>
+                    new_command <= '1';
+                    cur_comm <= WREN;
+                when WREN =>
+                    new_command <= '1';
+                    -- pass address to program.
+                    -- If address reaches end of page should issue a new PP comm.
+                    
+                    cur_comm <= PP; -- Check address of writing. Page is 256 bytes.
+                    -- Set data to write.
+                when PP =>
+                    new_command <= '1';
+                    cur_comm <= WRDI;
+                when others => 
+                    new_command <= '0';
+                    cur_comm <= NOP;
+                end case;
                 
+            end if;
+            -- enable writing
+            -- send write request
+            -- stop CS
+            -- disable writing
+        when READ_ENTRY =>
+            if(finish = '1')
+            then
+                case cur_comm is
+
+                when NOP => 
+                    new_command <= '1';
+                    -- pass address to read.
+                    cur_comm <= FAST_RD;
+                when FAST_RD =>
+                    exp <= '1';
+                    if(finish = '1')
+                    then
+                        exp <= '0';
+                        -- Set CS to high.
+                    end if;
+                
+                end case;
+            end if;
+        when NO_ACTION =>
+        when others =>
+        end case;   
     end if;
+    if(new_command = '1')
+    then 
+        new_command <= '0'; -- Set new_comm to 1 only for one clk cycle
+    end if;
+    
 end process;
 
 read_out <= read_out_internal;

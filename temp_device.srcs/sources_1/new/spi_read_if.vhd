@@ -37,7 +37,7 @@ entity spi_read_if is
 port(
     finish : in std_logic;
     exp : in std_logic; -- always expect 4 bytes
-    --num_exp : in natural;
+    --num_exp : in natural; -- Need to know if reading data or status
     SO: in std_logic;
     clk: in std_logic; -- 100MHz clock
     

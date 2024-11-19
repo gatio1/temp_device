@@ -35,11 +35,16 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity spi_mem_if is
   Port (
+  -- Add a way to pass PP bytes.
+  -- Add in signal for read address.
+  addr_in: in std_logic_vector(24 downto 0);
+  cur_comm: in command;
+  new_command: in std_logic;
   clk:in std_logic;
   wr_rd_flag:in std_logic;
   init_flash_sw: in std_logic; -- Switch that will reset flash on init
   exp: out std_logic; -- If command is finished but input from spi is expected.
-  finish: std_logic; -- When operation is finished (no read)
+  finish: out std_logic := '1'; -- When operation is finished
   -- SPI ports
   CS: out std_logic := '1';
   -- SCLK: out std_logic:= '1';
@@ -58,7 +63,7 @@ signal rx_tx: std_logic := '1'; -- 0 if recieving, 1 if transmitting to flash
 signal initing: std_logic := '0';
 signal state_flags: std_logic_vector(0 to 7) := x"0000";
 
-signal current_comm: command;
+signal cur_comm_internal: command;
 signal bit_comm: natural := 0;
 signal byte_comm: natural := 0;
 signal addr: std_logic_vector(24 downto 0);
@@ -70,6 +75,8 @@ signal reading_bytes :natural := 0; -- Number of bytes left to receive.
 signal new_comm: std_logic := '0';
 signal new_comm_prev: std_logic := '0';
 
+signal finish_internal: std_logic := '1';
+
 
 
 begin
@@ -79,6 +86,11 @@ variable count_ops: natural:= 0;
 begin
     if(clk'event and clk='1')
     then
+        if(new_command = '1' and finish_internal = '1')
+        then
+            cur_comm_internal <= cur_comm;
+            finish <= '0';
+        end if;
         if(init = '1')
         then
             init <= '0';
@@ -95,7 +107,7 @@ begin
             bit_comm <= bit_comm - 1;
             SI <= current_byte(bit_comm);
         end if;
-        case current_comm is
+        case cur_comm_internal is
             when PP => -- 23:16, 15:8, 7:0(addr)
                 if byte_comm = 0 and new_comm /= new_comm_prev
                 then 
@@ -164,10 +176,12 @@ begin
                     -- set current_byte
                  end if;
             when NOP =>
+                finish <='1';
             when others =>
+                finish <= '1';
         end case;
         new_comm_prev <= new_comm;
     end if;
 end process;
-
+finish <= finish_internal;
 end Behavioral;
